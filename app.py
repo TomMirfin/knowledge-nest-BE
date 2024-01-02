@@ -27,12 +27,19 @@ class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
     skills: str = Field(...)
-    interests: str = Field(...)
+    interests: list = Field(...)
+
+class UpdateUserModel(BaseModel):
+    """
+    A set of optional updates to be made to a document in the database.
+    """
+    skills: Optional[str] = None
+    interests: Optional[list] = None
 
 class UserCollection(BaseModel):
     users: List[UserModel]
 
-@app.post('/user',response_description="Add new user",
+@app.post('/users',response_description="Add new user",
     response_model=UserModel,
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
@@ -83,4 +90,34 @@ async def delete_student(id: str):
     if delete_result.deleted_count == 1:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+
+@app.put(
+    "/users/{id}",
+    response_description="Update a user",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def update_student(id: str, user: UpdateUserModel = Body(...)):
+    user = {
+        k: v for k, v in user.model_dump(by_alias=True).items() if v is not None
+    }
+
+    if len(user) >= 1:
+        update_result = await user_collection.find_one_and_update(
+            {"_id": ObjectId(id)},
+            {"$set": user},
+            return_document=ReturnDocument.AFTER,
+        )
+        if update_result is not None:
+            return update_result
+        else:
+            raise HTTPException(status_code=404, detail=f"User {id} not found")
+    if len(user) == 0:
+        raise HTTPException(status_code=404, detail=f"Bad request")
+
+    if (existing_user := await user_collection.find_one({"_id": id})) is not None:
+        return existing_user
+ 
     raise HTTPException(status_code=404, detail=f"User {id} not found")
