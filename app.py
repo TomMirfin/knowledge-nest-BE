@@ -29,6 +29,9 @@ class UserModel(BaseModel):
     skills: str = Field(...)
     interests: str = Field(...)
 
+class UserCollection(BaseModel):
+    users: List[UserModel]
+
 @app.post('/user',response_description="Add new user",
     response_model=UserModel,
     status_code=status.HTTP_201_CREATED,
@@ -44,4 +47,8 @@ async def create_user(user: UserModel = Body(...)):
     return created_user
 
 
+@app.get('/users', response_model=UserCollection,
+    response_model_by_alias=False,)
 
+async def list_users():
+    return UserCollection(users=await user_collection.find().to_list(1000))
