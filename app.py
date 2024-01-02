@@ -26,14 +26,15 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
-    skills: str = Field(...)
+    skills: list = Field(...)
     interests: list = Field(...)
+    email: Optional[EmailStr]
 
 class UpdateUserModel(BaseModel):
     """
     A set of optional updates to be made to a document in the database.
     """
-    skills: Optional[str] = None
+    skills: Optional[list] = None
     interests: Optional[list] = None
 
 class UserCollection(BaseModel):
