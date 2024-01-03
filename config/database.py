@@ -9,3 +9,4 @@ client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
 db = client.skillshare
 
 user_collection = db.get_collection("users")
+review_collection = db.get_collection("reviews")
