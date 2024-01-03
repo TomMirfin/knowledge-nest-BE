@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ReturnDocument
-from config.database import user_collection, article_collection
+from config.database import user_collection, article_collection, review_collection
 
 router = APIRouter()
 
@@ -229,3 +229,70 @@ async def update_article(id: str, article: UpdateArticleModel = Body(...)):
  
     raise HTTPException(status_code=404, detail=f"article {id} not found")
 
+#---------------------------------------------------
+
+class ReviewModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    username: str = Field(...)
+    title: str = Field(...)
+    body: str = Field(...)
+    rating: int = Field(None, ge=0, le=5)
+    created_at: Optional[str] = Field(default_factory=get_current_timestamp)
+
+class ReviewCollection(BaseModel):
+    reviews: List[ReviewModel]
+
+
+@router.post('/reviews',response_description="Add new review",
+    response_model=ReviewModel,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,)
+
+async def create_review(review: ReviewModel = Body(...)):
+    new_review = await review_collection.insert_one(
+        review.model_dump(by_alias=True, exclude=['id'])
+    )
+    created_review = await review_collection.find_one(
+        {'_id': new_review.inserted_id}
+    )
+    return created_review
+
+
+@router.get('/reviews', response_model=ReviewCollection,
+    response_model_by_alias=False,)
+
+async def list_reviews():
+    return ReviewCollection(reviews=await review_collection.find().to_list(1000))
+
+
+@router.get('/reviews/{id}',response_model=ReviewModel,
+    response_model_by_alias=False)
+
+
+async def show_review(id: str):
+    try:
+        review_id = ObjectId(id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail='Invalid id format')
+
+
+    try:
+        if (review := await review_collection.find_one({"_id": ObjectId(id)})) is not None:
+            return review
+        else:
+            raise HTTPException(status_code=404, detail='Review not found')
+    except Exception as err:
+        raise HTTPException(status_code=404, detail='Review not found')
+    
+
+@router.delete("/reviews/{id}", response_description="Delete a review")
+async def delete_review(id: str):
+    try:
+        delete_result = await review_collection.delete_one({"_id": ObjectId(id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid id format')
+
+    if delete_result.deleted_count == 1:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    raise HTTPException(status_code=404, detail=f"Review {id} not found")
