@@ -72,3 +72,15 @@ async def show_user(id: str):
             raise HTTPException(status_code=404, detail='User not found')
     except Exception as err:
         raise HTTPException(status_code=404, detail='User not found')
+
+@app.delete("/users/{id}", response_description="Delete a user")
+async def delete_student(id: str):
+    try:
+        delete_result = await user_collection.delete_one({"_id": ObjectId(id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid id format')
+
+    if delete_result.deleted_count == 1:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    raise HTTPException(status_code=404, detail=f"User {id} not found")
