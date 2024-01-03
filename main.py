@@ -5,8 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 origins = [
-    "http://localhost.tiangolo.com/",
-    "https://localhost.tiangolo.com/",
+    "https://skillshare-app.onrender.com/",
     "http://localhost/",
     "http://localhost:8080/",
 ]
