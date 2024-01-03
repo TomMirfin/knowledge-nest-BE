@@ -52,3 +52,23 @@ async def create_user(user: UserModel = Body(...)):
 
 async def list_users():
     return UserCollection(users=await user_collection.find().to_list(1000))
+
+
+@app.get('/users/{id}',response_model=UserModel,
+    response_model_by_alias=False)
+
+
+async def show_user(id: str):
+    try:
+        user_id = ObjectId(id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail='Invalid id format')
+
+
+    try:
+        if (user := await user_collection.find_one({"_id": ObjectId(id)})) is not None:
+            return user
+        else:
+            raise HTTPException(status_code=404, detail='User not found')
+    except Exception as err:
+        raise HTTPException(status_code=404, detail='User not found')
