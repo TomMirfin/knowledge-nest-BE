@@ -1,25 +1,15 @@
 from typing import Optional, List
-from fastapi import FastAPI, Body, HTTPException, status
+from fastapi import Body, HTTPException, status, APIRouter
 from fastapi.responses import Response
-from pydantic import ConfigDict, BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr
 from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 from bson import ObjectId
 from bson.errors import InvalidId
-import motor.motor_asyncio
 from pymongo import ReturnDocument
-from decouple import config
+from config.database import user_collection
 
-
-app = FastAPI()
-
-MONGO_DETAILS = config("MONGO_DETAILS")
-
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
-
-db = client.skillshare
-
-user_collection = db.get_collection("users")
+router = APIRouter()
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -40,7 +30,7 @@ class UpdateUserModel(BaseModel):
 class UserCollection(BaseModel):
     users: List[UserModel]
 
-@app.post('/users',response_description="Add new user",
+@router.post('/users',response_description="Add new user",
     response_model=UserModel,
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
@@ -55,14 +45,14 @@ async def create_user(user: UserModel = Body(...)):
     return created_user
 
 
-@app.get('/users', response_model=UserCollection,
+@router.get('/users', response_model=UserCollection,
     response_model_by_alias=False,)
 
 async def list_users():
     return UserCollection(users=await user_collection.find().to_list(1000))
 
 
-@app.get('/users/{id}',response_model=UserModel,
+@router.get('/users/{id}',response_model=UserModel,
     response_model_by_alias=False)
 
 
@@ -81,7 +71,7 @@ async def show_user(id: str):
     except Exception as err:
         raise HTTPException(status_code=404, detail='User not found')
 
-@app.delete("/users/{id}", response_description="Delete a user")
+@router.delete("/users/{id}", response_description="Delete a user")
 async def delete_student(id: str):
     try:
         delete_result = await user_collection.delete_one({"_id": ObjectId(id)})
@@ -94,7 +84,7 @@ async def delete_student(id: str):
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
 
-@app.put(
+@router.put(
     "/users/{id}",
     response_description="Update a user",
     response_model=UserModel,
