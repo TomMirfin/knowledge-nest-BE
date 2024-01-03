@@ -9,6 +9,7 @@ from bson.errors import InvalidId
 import motor.motor_asyncio
 from pymongo import ReturnDocument
 from decouple import config
+from datetime import datetime
 
 
 app = FastAPI()
@@ -20,15 +21,22 @@ client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
 db = client.skillshare
 
 user_collection = db.get_collection("users")
+article_collection = db.get_collection("articles")
+
+
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
+
+
+# Users
+# ------------------------------------------------------------------
 
 class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
     skills: list = Field(...)
     interests: list = Field(...)
-    email: Optional[EmailStr]
+    email: Optional[EmailStr] = None
 
 class UpdateUserModel(BaseModel):
     """
@@ -122,3 +130,40 @@ async def update_student(id: str, user: UpdateUserModel = Body(...)):
         return existing_user
  
     raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+# ------------------------------------------------------------------
+
+# Articles
+
+# ------------------------------------------------------------------
+
+class ArticleModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    username: str = Field(...)
+    title: str = Field(...)
+    topic: str = Field(...)
+    body: str = Field(...)
+    created_at: Optional[str] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+class ArticleCollection(BaseModel):
+    users: List[ArticleModel]
+
+@app.post('/articles',response_description="Add new articles",
+    response_model=ArticleModel,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,)
+
+async def create_article(article: ArticleModel = Body(...)):
+    new_article = await article_collection.insert_one(
+        article.model_dump(by_alias=True, exclude=['id'])
+    )
+    created_article = await article_collection.find_one(
+        {'_id': new_article.inserted_id}
+    )
+    return created_article
+
+@app.get('/articles', response_model=ArticleCollection,
+    response_model_by_alias=False,)
+
+async def list_articles():
+    return ArticleCollection(articles=await article_collection.find().to_list(1000))
