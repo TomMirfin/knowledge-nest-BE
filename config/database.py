@@ -6,6 +6,6 @@ MONGO_DETAILS = config("MONGO_DETAILS")
 
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
 
-db = client.skillshare_db
+db = client.skillshare
 
 user_collection = db.get_collection("users")
