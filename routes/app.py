@@ -24,7 +24,7 @@ class UserModel(BaseModel):
     skills: list = Field(...)
     interests: list = Field(...)
     email: Optional[EmailStr] = None
-    img_url: Optional[str] = Field("https://imgur.com/z7eiLjV")
+    img_url: Optional[str] = Field("https://i.imgur.com/z7eiLjV.png")
 
 class UpdateUserModel(BaseModel):
     """
