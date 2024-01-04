@@ -24,6 +24,7 @@ class UserModel(BaseModel):
     skills: list = Field(...)
     interests: list = Field(...)
     email: Optional[EmailStr] = None
+    img_url: Optional[str] = Field("https://imgur.com/z7eiLjV")
 
 class UpdateUserModel(BaseModel):
     """
@@ -31,6 +32,7 @@ class UpdateUserModel(BaseModel):
     """
     skills: Optional[list] = None
     interests: Optional[list] = None
+    img_url: Optional[str] = None
 
 class UserCollection(BaseModel):
     users: List[UserModel]
@@ -128,6 +130,9 @@ async def update_student(id: str, user: UpdateUserModel = Body(...)):
 def get_current_timestamp():
     return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+def get_current_timestamp_sorting():
+    return datetime.now()
+
 
 class ArticleModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -136,6 +141,7 @@ class ArticleModel(BaseModel):
     topic: str = Field(...)
     body: str = Field(...)
     created_at: Optional[str] = Field(default_factory=get_current_timestamp)
+    created_at_sorting: Optional[datetime] = Field(default_factory=get_current_timestamp_sorting)
 
 class UpdateArticleModel(BaseModel):
     title: Optional[str] = None
@@ -162,8 +168,13 @@ async def create_article(article: ArticleModel = Body(...)):
 @router.get('/articles', response_model=ArticleCollection,
     response_model_by_alias=False,)
 
-async def list_articles():
-    return ArticleCollection(articles=await article_collection.find().to_list(1000))
+async def list_articles(sortby: str = "DESC"):
+    if sortby == "DESC":
+        return ArticleCollection(articles=await article_collection.find().sort("created_at_sorting", -1).to_list(1000))
+    elif sortby == "ASC":
+        return ArticleCollection(articles=await article_collection.find().sort("created_at_sorting", 1).to_list(1000))
+    else:
+        raise HTTPException(status_code=400, detail='Invalid param')
 
 @router.get('/articles/{id}',response_model=ArticleModel,
     response_model_by_alias=False)
@@ -238,6 +249,7 @@ class ReviewModel(BaseModel):
     body: str = Field(...)
     rating: int = Field(None, ge=0, le=5)
     created_at: Optional[str] = Field(default_factory=get_current_timestamp)
+    created_at_sorting: Optional[datetime] = Field(default_factory=get_current_timestamp_sorting)
 
 class ReviewCollection(BaseModel):
     reviews: List[ReviewModel]
@@ -261,8 +273,13 @@ async def create_review(review: ReviewModel = Body(...)):
 @router.get('/reviews', response_model=ReviewCollection,
     response_model_by_alias=False,)
 
-async def list_reviews():
-    return ReviewCollection(reviews=await review_collection.find().to_list(1000))
+async def list_reviews(sortby: str = "DESC"):
+    if sortby == "DESC":
+        return ReviewCollection(reviews=await article_collection.find().sort("created_at_sorting", -1).to_list(1000))
+    elif sortby == "ASC":
+        return ReviewCollection(reviews=await article_collection.find().sort("created_at_sorting", 1).to_list(1000))
+    else:
+        raise HTTPException(status_code=400, detail='Invalid param')
 
 
 @router.get('/reviews/{id}',response_model=ReviewModel,
