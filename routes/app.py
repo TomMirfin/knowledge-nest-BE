@@ -105,33 +105,33 @@ async def delete_student(id: str):
 
 
 @router.put(
-    "/users/{id}",
+    "/users/{username}",
     response_description="Update a user",
     response_model=UserModel,
     response_model_by_alias=False,
 )
-async def update_student(id: str, user: UpdateUserModel = Body(...)):
+async def update_student(username: str, user: UpdateUserModel = Body(...)):
     user = {
         k: v for k, v in user.model_dump(by_alias=True).items() if v is not None
     }
 
     if len(user) >= 1:
         update_result = await user_collection.find_one_and_update(
-            {"_id": ObjectId(id)},
+            {"username": username},
             {"$set": user},
             return_document=ReturnDocument.AFTER,
         )
         if update_result is not None:
             return update_result
         else:
-            raise HTTPException(status_code=404, detail=f"User {id} not found")
+            raise HTTPException(status_code=404, detail=f"User {username} not found")
     if len(user) == 0:
         raise HTTPException(status_code=404, detail=f"Bad request")
 
     if (existing_user := await user_collection.find_one({"_id": id})) is not None:
         return existing_user
  
-    raise HTTPException(status_code=404, detail=f"User {id} not found")
+    raise HTTPException(status_code=404, detail=f"User {username} not found")
 
 # ------------------------------------------------------------------
 
