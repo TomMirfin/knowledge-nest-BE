@@ -11,3 +11,4 @@ db = client.skillshare
 user_collection = db.get_collection("users")
 article_collection = db.get_collection("articles")
 review_collection = db.get_collection("reviews")
+login_collection = db.get_collection("logins")

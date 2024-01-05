@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ReturnDocument
-from config.database import user_collection, article_collection, review_collection
+from config.database import user_collection, article_collection, review_collection, login_collection
 
 router = APIRouter()
 
@@ -21,8 +21,9 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
-    skills: list = Field(...)
-    interests: list = Field(...)
+    token: str = Field(...)
+    skills: Optional[list] = Field([])
+    interests: Optional[list] = Field([])
     email: Optional[EmailStr] = None
     img_url: Optional[str] = Field("https://i.imgur.com/z7eiLjV.png")
 
@@ -72,6 +73,18 @@ async def show_user(id: str):
 
     try:
         if (user := await user_collection.find_one({"_id": ObjectId(id)})) is not None:
+            return user
+        else:
+            raise HTTPException(status_code=404, detail='User not found')
+    except Exception as err:
+        raise HTTPException(status_code=404, detail='User not found')
+    
+@router.get('/users/username/{username}',response_model=UserModel,
+    response_model_by_alias=False)
+
+async def show_user(username: str):
+    try:
+        if (user := await user_collection.find_one({"username": username})) is not None:
             return user
         else:
             raise HTTPException(status_code=404, detail='User not found')
@@ -272,6 +285,8 @@ async def create_review(review: ReviewModel = Body(...)):
 
 @router.get('/reviews', response_model=ReviewCollection,
     response_model_by_alias=False,)
+
+
 
 async def list_reviews(sortby: str = "DESC"):
     if sortby == "DESC":
