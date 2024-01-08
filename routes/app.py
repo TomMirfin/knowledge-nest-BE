@@ -21,9 +21,10 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class UserModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
-    token: str = Field(...)
+    token: Optional[str] = None
     skills: Optional[list] = Field([])
     interests: Optional[list] = Field([])
+    bio: Optional[str] = None
     email: Optional[EmailStr] = None
     img_url: Optional[str] = Field("https://i.imgur.com/z7eiLjV.png")
 
@@ -34,6 +35,7 @@ class UpdateUserModel(BaseModel):
     skills: Optional[list] = None
     interests: Optional[list] = None
     img_url: Optional[str] = None
+    bio: Optional[str] = None
 
 class UserCollection(BaseModel):
     users: List[UserModel]
