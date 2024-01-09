@@ -260,6 +260,7 @@ async def update_article(id: str, article: UpdateArticleModel = Body(...)):
 class ReviewModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     username: str = Field(...)
+    created_about: str = Field(...)
     title: str = Field(...)
     body: str = Field(...)
     rating: int = Field(None, ge=0, le=5)
@@ -290,33 +291,22 @@ async def create_review(review: ReviewModel = Body(...)):
 
 
 
-async def list_reviews(sortby: str = "DESC"):
-    if sortby == "DESC":
-        return ReviewCollection(reviews=await article_collection.find().sort("created_at_sorting", -1).to_list(1000))
-    elif sortby == "ASC":
-        return ReviewCollection(reviews=await article_collection.find().sort("created_at_sorting", 1).to_list(1000))
-    else:
-        raise HTTPException(status_code=400, detail='Invalid param')
-
-
-@router.get('/reviews/{id}',response_model=ReviewModel,
-    response_model_by_alias=False)
-
-
-async def show_review(id: str):
-    try:
-        review_id = ObjectId(id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail='Invalid id format')
-
-
-    try:
-        if (review := await review_collection.find_one({"_id": ObjectId(id)})) is not None:
-            return review
+async def list_reviews(sortby: str = "DESC", created_about: str = None):
+    if created_about:
+        print('hello')
+        if sortby == "DESC":
+            return ReviewCollection(reviews=await review_collection.find({'created_about': created_about}).sort("created_at_sorting", -1).to_list(1000))
+        elif sortby == "ASC":
+            return ReviewCollection(reviews=await review_collection.find({'created_about': created_about}).sort("created_at_sorting", 1).to_list(1000))
         else:
-            raise HTTPException(status_code=404, detail='Review not found')
-    except Exception as err:
-        raise HTTPException(status_code=404, detail='Review not found')
+            raise HTTPException(status_code=400, detail='Invalid param')
+    else:
+        if sortby == "DESC":
+            return ReviewCollection(reviews=await review_collection.find().sort("created_at_sorting", -1).to_list(1000))
+        elif sortby == "ASC":
+            return ReviewCollection(reviews=await review_collection.find().sort("created_at_sorting", 1).to_list(1000))
+        else:
+            raise HTTPException(status_code=400, detail='Invalid param')
     
 
 @router.delete("/reviews/{id}", response_description="Delete a review")
